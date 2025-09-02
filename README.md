@@ -15,6 +15,18 @@
 ## הרצה
 ```bash
 python pipeline/run_stage1.py --input "C:\path\QS.xlsx" --output-dir "C:\out" --sheet-name "sheet1"
+
+in the terminal- vscode:
+python -m pipeline.run_stage1 `                                                                           
+>>   --input "C:\path\QS.xlsx" `
+>>   --output-dir "C:\out" --sheet-name "sheet1" `
+>>   --drop-empty `
+>>   --split-by-manager `
+>>   --market-private `
+>>   --market-tedmiti `
+>>   --pivot-private ` 
+>>   --pivot-tedmiti `
+>>   --by-agent       
 ```
 
 - הפלט יישמר בשם: `<שם_מקור>_<YYYY-MM-DD>_<HH-MM>.xlsx` בתיקיית output שהוגדרה.
