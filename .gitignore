@@ -1,0 +1,19 @@
+﻿# OS/IDE
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Env/Secrets
+.env
+*.env
+
+# Data (קבצים מעובדים/גדולים)
+data/
