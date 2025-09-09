@@ -177,6 +177,9 @@ def build_manager_sheets(
         col_order += ["קוד לקוח משלם", "לקוח משלם"]
         data["קוד לקוח משלם"] = sub[payer_code_src] if payer_code_src in sub.columns else ""
         data["לקוח משלם"] = sub[payer_name_src] if payer_name_src in sub.columns else ""
+        # if "שיטת תשלום לקוח משלם" in sub.columns:
+        #     col_order += ["שיטת תשלום לקוח משלם"]
+        #     data["שיטת תשלום לקוח משלם"] = sub["שיטת תשלום לקוח משלם"]
 
         col_order += ["קוד סוכן"]
         data["קוד סוכן"] = sub[agent_code_col] if agent_code_col in sub.columns else ""
@@ -206,6 +209,10 @@ def build_manager_sheets(
             data[HELPER_COL_NAME] = dyn_num.sum(axis=1, skipna=True)
         else:
             data[HELPER_COL_NAME] = 0.0
+            
+        if "שיטת תשלום לקוח משלם" in sub.columns:
+            col_order.append("שיטת תשלום לקוח משלם")
+            data["שיטת תשלום לקוח משלם"] = sub["שיטת תשלום לקוח משלם"]
 
         out_df = pd.DataFrame(data)[col_order]
         
