@@ -224,7 +224,7 @@ def _shade_colA_and_group_borders(
 
 FRONT_CANDIDATES = [
     "מנהל סחר","מנהל אזור","מנהל איזור",
-    "סוכן","ערוץ","קוד לקוח קצה","לקוח קצה","קוד סוכן"
+    "סוכן","ערוץ","שיטת תשלום לקוח משלם","קוד לקוח קצה","לקוח קצה","קוד סוכן"
 ]
 SUM_HEADER = 'סה"כ סכום יתרת חוב'
 
@@ -318,7 +318,7 @@ def main():
     df_proc = normalize_numeric_columns(df_proc, amount_headers)
 
     print(f"[{step}/{total_steps}] מחיקת עמודות לא נדרשות...", flush=True); step += 1
-    df_proc, dropped_cols = drop_columns(df_proc, columns=("שיטת תשלום לקוח משלם","שיטת תשלום"))
+    df_proc, dropped_cols = drop_columns(df_proc, columns=("שייייטת תשלום")) #("שיטת תשלום לקוח משלם","שיטת תשלום") -> מחקתי שיטת תשלום לקוח משלם כי הלקוח החליט לשחזר עמודה
     if dropped_cols:
         print(f"    הוסרו עמודות: {dropped_cols}", flush=True)
 
