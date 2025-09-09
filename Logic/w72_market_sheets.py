@@ -124,6 +124,9 @@ def _build_manager_like_df(sub: pd.DataFrame, max_month_cols_after_today: int = 
     order += ["קוד לקוח משלם","לקוח משלם"]
     data["קוד לקוח משלם"] = sub[payer_code] if payer_code in sub.columns else ""
     data["לקוח משלם"] = sub[payer_name] if payer_name in sub.columns else ""
+    # if "שיטת תשלום לקוח משלם" in sub.columns:
+    #     order += ["שיטת תשלום לקוח משלם"]
+    #     data["שיטת תשלום לקוח משלם"] = sub["שיטת תשלום לקוח משלם"]
 
     order += ["קוד סוכן"]
     data["קוד סוכן"] = sub[agent_code] if agent_code in sub.columns else ""
@@ -153,6 +156,10 @@ def _build_manager_like_df(sub: pd.DataFrame, max_month_cols_after_today: int = 
         data[HELPER_COL_NAME] = dyn_num.sum(axis=1, skipna=True)
     else:
         data[HELPER_COL_NAME] = 0.0
+        
+    if "שיטת תשלום לקוח משלם" in sub.columns:
+        order.append("שיטת תשלום לקוח משלם")
+        data["שיטת תשלום לקוח משלם"] = sub["שיטת תשלום לקוח משלם"]
 
     out_df = pd.DataFrame(data)[order]
     total_for_sum = total_col or SUM_ANCHOR_TOTAL
