@@ -25,9 +25,19 @@ from Logic.w71_manager_sheet_builder import build_manager_sheets
 from Logic.w72_market_sheets import build_private_market_like_manager, build_tedmiti_full_columns
 from Logic.w73_region_general_sheet import build_region_general_full_columns
 from Logic.w75_pivot_sheets import build_pivot_private, build_pivot_tedmiti
-from Logic.w76_agent_by_agent import build_by_agent_sheet
+
+
+
 from Logic.w77_fix_rafi_sheet import refine_rafi_sheet_rows
 from Logic.w78_fix_private_sheet import refine_private_region_rows
+
+
+# --- allow importing group_spec from project root ---
+import sys, os
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 
 
 def _argb(color_hex: str) -> str:
@@ -520,29 +530,79 @@ def main():
         except Exception as e:
             print(f"שגיאה בבניית גיליון 'פיבוט תדמיתי': {e}", flush=True)
             
-            
+
+
+    # 7) לפי סוכן (w90)
     if args.by_agent:
-        print("• בניית גיליון 'לפי סוכן'...", flush=True)
+        print("• בניית גיליון 'לפי סוכן' (w90)...", flush=True)
+        ok = False
         try:
-            ok, name, nrows = build_by_agent_sheet(
-                df_for_reports, out_path,
-                pivot_sheet_name="פיבוט פרטי",
-                extra_pivot_sheet_name="פיבוט תדמיתי",
-                sheet_name="לפי סוכן"
+            from Logic.w90_agent import build_by_agent_sheet_w90
+            ok, name, nrows = build_by_agent_sheet_w90(
+                out_path,
+                private_pivot="פיבוט פרטי",
+                tedmiti_pivot="פיבוט תדמיתי",
+                sheet_name="לפי סוכן",
             )
             print(f"    נבנה: {name} (שורות: {nrows})" if ok else "    לא נבנה (אין נתונים/לא נמצא פיבוט)", flush=True)
-            if ok:
-                try:
-                    #_color_by_agent_headers(out_path, sheet_name=name)
-                    _style_by_agent_columns(out_path, sheet_name=name, hk_color="#EEBF90", colL_color="#E9FCE9")
-                    _outline_thick(out_path, sheet_name=name)
-                    _shade_colA_and_group_borders(out_path, sheet_name=name)
-                    print("    עודכנו צבעי כותרות ומסגרת עבה ב'לפי סוכן'.", flush=True)
-                except Exception as e:
-                    print(f"    [אזהרה] כשל בעיצוב 'לפי סוכן': {e}", flush=True)
-
         except Exception as e:
-            print(f"שגיאה בבניית 'לפי סוכן': {e}", flush=True)       
+            print(f"שגיאה בבניית 'לפי סוכן' (w90): {e}", flush=True)
+
+        if ok:
+        # (2) שורות ריקות לקבוצות
+            try:
+                from Logic.w90_agent import ensure_group_blank_rows_w90
+                ensure_group_blank_rows_w90(out_path, sheet_name="לפי סוכן")
+            except Exception as ge:
+                print(f"    [אזהרה] הוספת שורות ריקות נכשלה: {ge}", flush=True)
+
+        # (3) ריתוך נוסחאות הסיכום אחרי ההחדרה
+            try:
+                from Logic.w90_agent import rebind_all_sum_rows_w90
+                rebind_all_sum_rows_w90(out_path, sheet_name="לפי סוכן")
+            except Exception as ge:
+                print(f"    [אזהרה] תיקון נוסחאות סיכום נכשל: {ge}", flush=True)
+
+        # (4) רשתות ארציות
+            try:
+                from Logic.w90_agent import link_national_from_manager_sheets_w90
+                link_national_from_manager_sheets_w90(out_path, sheet_name="לפי סוכן")
+                print("    רשתות ארציות מולאו מנתוני גיליונות המנהלים.", flush=True)
+            except Exception as ge:
+                print(f"    [אזהרה] רשתות ארציות לא מולאו: {ge}", flush=True)
+
+        # (5) L/C/E
+            try:
+                from Logic.w90_agent import ensure_pigor_sum_and_pct_w90
+                ensure_pigor_sum_and_pct_w90(out_path, sheet_name="לפי סוכן")
+                print("    עודכן: 'סך פיגור' (L) + אחוזים ב-C/E בכל השורות.", flush=True)
+            except Exception as ge:
+                print(f"    [אזהרה] חישוב 'סך פיגור' ואחוזים נכשל: {ge}", flush=True)
+
+        # (6) פריסת עמודות למניעת #####
+            try:
+                from Logic.w90_agent import set_column_layout_w90
+                set_column_layout_w90(out_path, sheet_name="לפי סוכן")
+                print("    עיצוב תצוגה: רוחבי עמודות + RTL + Freeze + shrink-to-fit (למניעת #####).", flush=True)
+            except Exception as ge:
+                print(f"    [אזהרה] עיצוב תצוגה לא הושלם: {ge}", flush=True)
+
+        # (7) צבעי קבוצות/קו עבה/Bold
+            try:
+                from Logic.w90_agent import style_groups_colA_only_w90
+                style_groups_colA_only_w90(out_path, sheet_name="לפי סוכן")
+                print("    עיצוב: עמודה A בקבוצות + Bold לשורות המבוקשות + קווים.", flush=True)
+            except Exception as ge:
+                print(f"    [אזהרה] עיצוב-סיום לא הושלם: {ge}", flush=True)
+
+        # (8) בלי קו עבה מעל 'סה\"כ רשתות ארציות'
+            try:
+                from Logic.w90_agent import remove_thick_above_national_total
+                remove_thick_above_national_total(out_path, sheet_name="לפי סוכן")
+                print("    עודכן: הוסר הקו העבה מעל 'סה\"כ רשתות ארציות'.", flush=True)
+            except Exception as ge:
+                print(f"    [אזהרה] ניקוי קו עבה מעל רשתות ארציות נכשל: {ge}", flush=True)
+                
             
 
     print("\nהפקה הושלמה בהצלחה:", out_path)
@@ -556,3 +616,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
+    
+    
+    
