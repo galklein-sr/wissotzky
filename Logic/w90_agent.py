@@ -474,14 +474,48 @@ def rebind_all_sum_rows_w90(out_path: str, sheet_name: str = "לפי סוכן") 
     write_sum_to_row(r_private_total, [r for r in (r_danon, r_gil, r_center, r_arik_p) if r])
 
     # 4) סה"כ (זוג תדמיתי) = יעל + אריק (תדמיתי)
+    # r_ted_total = None
+    # # נאתר "סה\"כ" של הזוג לפי ערוץ "שוק תדמיתי"
+    # for r in range(2, ws.max_row+1):
+    #     if str(ws.cell(row=r, column=colA).value or "").strip() == 'סה"כ' and str(ws.cell(row=r, column=colB).value or "").strip() == "שוק תדמיתי":
+    #         r_ted_total = r; break
+    # r_yael = find_row("יעל כץ", "שוק תדמיתי")
+    # r_arik_t = find_row("אריק יחזקאל", "שוק תדמיתי")
+    # write_sum_to_row(r_ted_total, [r for r in (r_yael, r_arik_t) if r])
+
+
+#### סה"כ שוק תדמיתי יחדים, הבלוק למעלה לא היה מחשב שורות נכונות
     r_ted_total = None
-    # נאתר "סה\"כ" של הזוג לפי ערוץ "שוק תדמיתי"
+    # נסיון 1: A='סה"כ' ו-B='שוק תדמיתי' (אם הכתרת את הערוץ)
     for r in range(2, ws.max_row+1):
-        if str(ws.cell(row=r, column=colA).value or "").strip() == 'סה"כ' and str(ws.cell(row=r, column=colB).value or "").strip() == "שוק תדמיתי":
-            r_ted_total = r; break
-    r_yael = find_row("יעל כץ", "שוק תדמיתי")
+        a = str(ws.cell(row=r, column=colA).value or "").strip()
+        b = str(ws.cell(row=r, column=colB).value or "").strip()
+        if a == 'סה"כ' and b == 'שוק תדמיתי':
+            r_ted_total = r
+        break
+    
+    if r_ted_total is None:
+        for r in range(2, ws.max_row+1):
+            a = str(ws.cell(row=r, column=colA).value or "").strip()
+            b = str(ws.cell(row=r, column=colB).value or "").strip()
+            if a == 'סה"כ' and b == '':
+                prev_names = {
+                    str(ws.cell(row=r-1, column=colA).value or "").strip(),
+                    str(ws.cell(row=r-2, column=colA).value or "").strip()
+                }
+                prev_channels = {
+                    str(ws.cell(row=r-1, column=colB).value or "").strip(),
+                    str(ws.cell(row=r-2, column=colB).value or "").strip()
+                }
+                if {'יעל כץ', 'אריק יחזקאל'}.issubset(prev_names) and 'שוק תדמיתי' in prev_channels:
+                    r_ted_total = r
+                    break
+                
+    r_yael   = find_row("יעל כץ", "שוק תדמיתי")
     r_arik_t = find_row("אריק יחזקאל", "שוק תדמיתי")
     write_sum_to_row(r_ted_total, [r for r in (r_yael, r_arik_t) if r])
+    
+    #הסוף של בלוק החדש של סה"כ שוק תדמיתי יחידים
 
     # 5) עמי חכמון (תדמיתי)
     r_ami = find_row("עמי חכמון")
