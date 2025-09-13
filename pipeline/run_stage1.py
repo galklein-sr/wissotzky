@@ -594,6 +594,37 @@ def main():
                 print("    עיצוב: עמודה A בקבוצות + Bold לשורות המבוקשות + קווים.", flush=True)
             except Exception as ge:
                 print(f"    [אזהרה] עיצוב-סיום לא הושלם: {ge}", flush=True)
+                
+                
+        #remove bold line between lines 21 and 22
+            try:
+                from openpyxl import load_workbook
+                from openpyxl.styles import Border
+
+                wb = load_workbook(out_path)
+                if "לפי סוכן" in wb.sheetnames:
+                    ws = wb["לפי סוכן"]
+
+                    # מצא את השורה של 'סה"כ מוקד'
+                    row_sum = None
+                    for r in range(2, ws.max_row + 1):
+                        a = str(ws.cell(row=r, column=1).value or "").strip()
+                        if a == 'סה"כ מוקד':
+                            row_sum = r
+                            break
+
+                    # אם השורה הבאה היא 'אריק יחזקאל' – ננקה את ה-bottom border בשורת 'סה"כ מוקד'
+                    if row_sum and row_sum + 1 <= ws.max_row:
+                        next_a = str(ws.cell(row=row_sum + 1, column=1).value or "").strip()
+                        if next_a == "אריק יחזקאל":
+                            for c in range(1, ws.max_column + 1):
+                                cell = ws.cell(row=row_sum, column=c)
+                                b = cell.border
+                                cell.border = Border(left=b.left, right=b.right, top=b.top, bottom=None)
+
+                    wb.save(out_path)
+            except Exception as ge:
+                print(f'    [אזהרה] ניקוי קו עבה אחרי "סה\\"כ מוקד" נכשל: {ge}', flush=True)
 
         # (8) בלי קו עבה מעל 'סה\"כ רשתות ארציות'
             try:
