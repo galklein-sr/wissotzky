@@ -255,13 +255,14 @@ def build_by_agent_sheet_w90(
     r_arik_p = _write_agent_row("אריק יחזקאל", "שוק פרטי")
 
     # 2.1) סיכום שוק פרטי = ישראל דנון + גיל רפאל + סה\"כ מוקד + אריק (פרטי)
-    # (שמעון כהן לא נכנס לסיכום הזה לפי ההנחיות האחרונות שלך)
+    # (שמעון כהן לא נכנס לסיכום הזה לפי ההנחיות האחרונות )
     # private_manager_sum_rows = [שמעון כהן, ישראל דנון, גיל רפאל] בסדר הבנייה
     # נבחר לפי שמות להימנע מבלבול:
     #   index 0 = שמעון, 1 = ישראל, 2 = גיל
+    r_cohen = private_manager_sum_rows[0]  # לא בשימוש כרגע 
     r_danon = private_manager_sum_rows[1]
     r_gil   = private_manager_sum_rows[2]
-    r_private_total = _write_sum_row("סיכום שוק פרטי", [r_danon, r_gil, r_center, r_arik_p])
+    r_private_total = _write_sum_row("סיכום שוק פרטי", [r_cohen, r_danon, r_gil, r_center, r_arik_p])
 
     # 3) זוג תדמיתי: יעל + אריק (תדמיתי) -> "סה\"כ"
     r_yael  = _write_agent_row("יעל כץ", "שוק תדמיתי")
@@ -468,10 +469,11 @@ def rebind_all_sum_rows_w90(out_path: str, sheet_name: str = "לפי סוכן") 
 
     # 3) סיכום שוק פרטי = ישראל דנון + גיל רפאל + סה"כ מוקד + אריק (פרטי)
     r_private_total = find_row("סיכום שוק פרטי")
+    r_cohen = find_row("שמעון כהן - מנהל אזור")  
     r_danon = find_row("ישראל דנון- מנהל אזור")
     r_gil   = find_row("גיל רפאל")
     r_arik_p = find_row("אריק יחזקאל", "שוק פרטי")
-    write_sum_to_row(r_private_total, [r for r in (r_danon, r_gil, r_center, r_arik_p) if r])
+    write_sum_to_row(r_private_total, [r for r in (r_cohen, r_danon, r_gil, r_center, r_arik_p) if r])
 
     # 4) סה"כ (זוג תדמיתי) = יעל + אריק (תדמיתי)
     # r_ted_total = None
@@ -833,3 +835,89 @@ def set_column_layout_w90(xlsx_path: str, sheet_name: str = "לפי סוכן") -
 
     wb.save(xlsx_path); wb.close()
     return True
+
+
+
+
+
+
+#fixing pug , not relevant to by agent
+
+# --- FORCE total row at bottom for specific sheets (managers / private) ---
+# from openpyxl import load_workbook
+# from openpyxl.utils import get_column_letter
+
+# def force_column_totals_row(xlsx_path: str, sheet_name: str, label_text: str = 'סה"כ') -> bool:
+#     wb = load_workbook(xlsx_path, data_only=False)
+#     if sheet_name not in wb.sheetnames:
+#         wb.close(); return False
+#     ws = wb[sheet_name]
+
+#     # מיפוי כותרות
+#     hdr = {(ws.cell(row=1, column=c).value or "").strip(): c for c in range(1, ws.max_column+1)}
+#     col_total = hdr.get('סה"כ סכום יתרת חוב')              # F
+#     col_today = hdr.get('סה"כ סכום יתרת חוב עד היום')     # G
+#     col_pigor = hdr.get('סך פיגור')                        # אופציונלי (L)
+
+#     # עמודות חודשים לפי שם; אם לא נמצאו – לפי מיקום (אחרי G ועד לפני "סך פיגור")
+#     month_cols = sorted({c for name, c in hdr.items() if any(k in str(name) for k in ('חודש','טרם'))})
+#     if not month_cols:
+#         start = max((col_today or 7) + 1, 8)
+#         end = (col_pigor - 1) if col_pigor else ws.max_column
+#         if end >= start:
+#             month_cols = list(range(start, end+1))
+
+#     # ננקה כותרות לא־חודשיות מוכרות
+#     bad_titles = {"שיטת תשלום לקוח משלם", "שיטת תשלום", "לקוח משלם"}
+#     month_cols = [c for c in month_cols if (ws.cell(row=1, column=c).value or "").strip() not in bad_titles]
+
+#     # אם אין בכלל מה לסכם – צא בשקט
+#     if not (col_total or col_today or month_cols or col_pigor):
+#         wb.close(); return False
+
+#     # אם כבר קיימת שורת "סה\"כ" – נעדכן נוסחאות במקום להוסיף כפולה
+#     first_data_row = 2
+#     last_data_row  = ws.max_row
+#     existing_total_row = None
+#     for r in range(ws.max_row, 1, -1):
+#         a = str(ws.cell(row=r, column=1).value or "").strip()
+#         if a == label_text:
+#             existing_total_row = r
+#             break
+
+#     total_row = existing_total_row or (ws.max_row + 1)
+#     ws.cell(row=total_row, column=1).value = label_text
+
+#     def _sum_col(cidx: int):
+#         col_letter = get_column_letter(cidx)
+#         ws.cell(row=total_row, column=cidx).value = f"=SUM({col_letter}{first_data_row}:{col_letter}{last_data_row})"
+#         # מספרים רגילים
+#         ws.cell(row=total_row, column=cidx).number_format = "#,##0.00"
+
+#     # סכומים לעמודות העיקריות
+#     if col_total: _sum_col(col_total)
+#     if col_today: _sum_col(col_today)
+#     for c in month_cols: _sum_col(c)
+#     if col_pigor: _sum_col(col_pigor)
+
+#     # עיצוב בסיסי לשורת הסיכום
+#     ws.cell(row=total_row, column=1).font = ws.cell(row=1, column=1).font.copy(bold=True)
+
+#     wb.save(xlsx_path); wb.close()
+#     return True
+
+
+
+########## in the run_stage1.py , I should add this function in : 
+### גיליון מנהל ו שוק פרטי
+#הפונקציה עושה סכום לשעמודות
+# אחרי יצירת לשוניות המנהלים והשוק הפרטי:
+# try:
+#     from Logic.w90_agent import force_column_totals_row
+#     # רפי מור יוסף – להוסיף/לעדכן שורת סיכום
+#     force_column_totals_row(out_path, "רפי מור יוסף- סחר")
+#     # שוק פרטי – להוסיף/לעדכן שורת סיכום
+#     force_column_totals_row(out_path, "שוק פרטי")
+#     print("    הושלמה שורת 'סה\"כ' בעמודות F/G וחודשי פיגור בגיליונות: רפי מור יוסף- סחר, שוק פרטי.", flush=True)
+# except Exception as ge:
+#     print(f"    [אזהרה] השלמת שורת סכום בלשוניות לא הצליחה: {ge}", flush=True)
