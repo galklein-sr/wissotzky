@@ -31,7 +31,13 @@ from Logic.w75_pivot_sheets import build_pivot_private, build_pivot_tedmiti
 from Logic.w77_fix_rafi_sheet import refine_rafi_sheet_rows
 from Logic.w78_fix_private_sheet import refine_private_region_rows
 
-
+"""
+הערה בשבילי:
+לפי בקשת הלקוח , גיליון מעובד , הרחבתי את הכותרות , כמו בקובץ מקור 
+בגיליונות מנהלים השארתי כמו שהם. כן החלפתי את :
+old / ישן = dyn5
+new / חדש = dyn_to_T
+"""
 # --- allow importing group_spec from project root ---
 import sys, os
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -293,27 +299,31 @@ def main():
     front = [c for c in FRONT_CANDIDATES if c in df_all.columns]
     # 5 הכותרות שאחרי sum-header במקור
     all_cols = list(df_all.columns)
-    dyn5 = []
+    # dyn5 = []
+    dyn_to_T = []
     if args.sum_header in all_cols:
         h_idx = all_cols.index(args.sum_header)
-        for j in range(1, 6):
+        # for j in range(1, 6):
+        for j in range(1, 12):
             if h_idx + j < len(all_cols):
-                dyn5.append(all_cols[h_idx + j])
-    dyn5 = [c for c in dyn5 if c in df_all.columns]
+                dyn_to_T.append(all_cols[h_idx + j])
+                # dyn5.append(all_cols[h_idx + j])
+    # dyn5 = [c for c in dyn5 if c in df_all.columns]
+    dyn_to_T = [c for c in dyn_to_T if c in df_all.columns]
 
     # סדר סופי: עד "קוד סוכן" -> ואז sum-header + dyn5
     final_cols = list(front)
     if args.sum_header in df_all.columns:
         if "קוד סוכן" in final_cols:
             insert_at = final_cols.index("קוד סוכן") + 1
-            block = [args.sum_header] + dyn5  # בסדר המקורי
+            block = [args.sum_header] + dyn_to_T  # בסדר המקורי
             for item in reversed(block):
                 if item in df_all.columns and item not in final_cols:
                     final_cols.insert(insert_at, item)
         else:
             if args.sum_header not in final_cols:
                 final_cols.append(args.sum_header)
-            for c in dyn5:
+            for c in dyn_to_T:
                 if c not in final_cols:
                     final_cols.append(c)
 
@@ -324,7 +334,7 @@ def main():
     df_proc = df_proc[final_cols]
 
     print(f"[{step}/{total_steps}] נרמול ערכים מספריים ('{args.sum_header}' ועוד 5 הדינמיות)...", flush=True); step += 1
-    amount_headers = [h for h in [args.sum_header] + dyn5 if h in df_proc.columns]
+    amount_headers = [h for h in [args.sum_header] + dyn_to_T if h in df_proc.columns]
     df_proc = normalize_numeric_columns(df_proc, amount_headers)
 
     print(f"[{step}/{total_steps}] מחיקת עמודות לא נדרשות...", flush=True); step += 1
@@ -347,7 +357,8 @@ def main():
         
      # סינון שורות לא רצויות בעמודת 'סוכן'
     if "סוכן" in df_proc.columns:
-        bad_agents = {"חובות מסופקים", "לקוחות שוק קמעונאי"}
+        # bad_agents = {"חובות מסופקים", "לקוחות שוק קמעונאי"}
+        bad_agents = {"חובות מסופקים"}
         s_clean = df_proc["סוכן"].astype(str).str.replace(r"\s+", " ", regex=True).str.strip()
         removed_mask = s_clean.isin(bad_agents)
         n_removed = int(removed_mask.sum())
@@ -361,7 +372,8 @@ def main():
 
     if not args.keep_other:
         print(f"[{step}/{total_steps}] מחיקת 'אחר'/'אחר אחר' ב'מנהל סחר/אזור'...", flush=True); step += 1
-        df_proc, _ = remove_other_rows(df_proc, cols=["מנהל סחר","מנהל אזור","מנהל איזור"])
+        # df_proc, _ = remove_other_rows(df_proc, cols=["מנהל סחר","מנהל אזור","מנהל איזור"])
+        df_proc, _ = remove_other_rows(df_proc, cols=["מנהל סחר", "סוכן"])
 
     if args.drop_empty:
         print(f"[{step}/{total_steps}] מחיקת שורות ריקות/חסרות מזהים...", flush=True); step += 1
@@ -369,16 +381,47 @@ def main():
         print(f"    הוסרו {rem_full} ריקות ו-{rem_req} ללא מזהים.", flush=True)
 
     # *** סינון סופי לפני סכום: 'קוד סוכן' חייב להיות מספרי ***
-    print(f"[{step}/{total_steps}] סינון סופי: 'קוד סוכן' – רק ספרות ללא ריקים...", flush=True); step += 1
-    df_proc, removed_non_numeric = filter_agent_code_required(df_proc, col="קוד סוכן")
-    print(f"    הוסרו {removed_non_numeric} שורות ללא 'קוד סוכן' מספרי.", flush=True)
+    # print(f"[{step}/{total_steps}] סינון סופי: 'קוד סוכן' – רק ספרות ללא ריקים...", flush=True); step += 1
+    # df_proc, removed_non_numeric = filter_agent_code_required(df_proc, col="קוד סוכן")
+    # print(f"    הוסרו {removed_non_numeric} שורות ללא 'קוד סוכן' מספרי.", flush=True)
+    print(f"[{step}/{total_steps}] סינון סופי: 'קוד סוכן' – ספרות או 'אחר'...", flush=True); step += 1
+    s = df_proc["קוד סוכן"].astype("string").str.strip()
+
+    # לשמור מספרים מלאים או "אחר"
+    keep_mask = s.str.fullmatch(r"\d+") | s.isin(["אחר"])
+
+    removed_non_numeric = int((~keep_mask).sum())
+    df_proc = df_proc[keep_mask]
+
+    print(f"    הוסרו {removed_non_numeric} שורות שאינן ספרתיות ואינן 'אחר'.", flush=True)
+
+
 
     print(f"[{step}/{total_steps}] הוספת שורות סכום בסוף '{args.sum_header}'...", flush=True); step += 1
     df_proc = append_sum_rows(df_proc, args.sum_header)
 
     print(f"[{step}/{total_steps}] שמירה בשם עם חותמת זמן וגיליון 'מעובד'...", flush=True); step += 1
     out_path = save_processed(df_proc, input_path=args.input, output_dir=args.output_dir, sheet_name="מעובד")
-
+    ###################################################################################
+    from openpyxl import load_workbook
+    
+    try:
+        _qs_wb = load_workbook(args.input, data_only=True, read_only=True)
+        _qs_ws = _qs_wb[_qs_wb.sheetnames[0]]
+        _src_headers = [ _qs_ws.cell(row=1, column=c).value for c in range(15, 21) ]  
+        _qs_wb.close()
+        _out_wb = load_workbook(out_path)
+        if "מעובד" in _out_wb.sheetnames:
+            _ws = _out_wb["מעובד"]
+            for idx, val in enumerate(_src_headers, start=15):  # 15..20 => O..T
+                _ws.cell(row=1, column=idx, value=val)
+            _out_wb.save(out_path)
+        _out_wb.close()
+        print('    עודכן: כותרות O..T ב"מעובד" הועתקו אוטומטית מ־QS.', flush=True)
+    except Exception as e:
+        print(f'    [אזהרה] לא הצלחנו לעדכן כותרות O..T ב"מעובד": {_e}', flush=True)
+        
+            
     # ===== דוחות נגזרים מתוך 'מעובד' =====
     # לעבודה על דוחות: מסירים שורות "סכום" טקסטואליות
     df_for_reports = df_proc.copy()
@@ -409,6 +452,7 @@ def main():
                 df_mgr = df_mgr[~df_mgr["מנהל סחר"].str.fullmatch(r"(?i)none|nan|null|", na=False)]
                 # 4) מדלגים על "עמי חכמון" כדי שלא תיווצר לו לשונית
                 df_mgr = df_mgr[df_mgr["מנהל סחר"] != "עמי חכמון"]
+                # df_mgr = df_mgr[df_mgr["מנהל סחר"] != "עמי חכמון", "ישראל דנון- מנהל אזור", "סיגל אריאלי","אלדד כהן- סחר"]  #  לא מוחקים, רק לא יוצרים לו לשונית בדיוק כמו בקובץ של הלקוח 
 
             n_created, names = build_manager_sheets(
                 df_mgr, out_path,
@@ -428,6 +472,7 @@ def main():
                     cols_J_to_N="#EEBF90",
                 )
                 print("    עודכנו צבעי כותרות בלשוניות המנהלים (H/I/J..N).", flush=True)
+
             except Exception as e:
                 print(f"    [אזהרה] כשל בצביעת כותרות: {e}", flush=True)
 
@@ -455,7 +500,7 @@ def main():
         try:
             ok, name = build_private_market_like_manager(
                 df_for_reports, out_path,
-                manager_name="רפי מור יוסף- סחר",  # השאר כמו אצלך
+                manager_name="רפי מור יוסף- סחר",  
                 channel_value="שוק פרטי",
                 max_month_cols_after_today=4,
                 sheet_name="שוק פרטי"
@@ -633,6 +678,7 @@ def main():
                 print("    עודכן: הוסר הקו העבה מעל 'סה\"כ רשתות ארציות'.", flush=True)
             except Exception as ge:
                 print(f"    [אזהרה] ניקוי קו עבה מעל רשתות ארציות נכשל: {ge}", flush=True)
+                
                 
             
 
