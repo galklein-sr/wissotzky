@@ -2,8 +2,8 @@ import pandas as pd
 from typing import Tuple, List, Iterable
 
 TARGET_VALUES = {"אחר", "אחר אחר"}
-DEFAULT_COLS = ["מנהל סחר", "מנהל אזור", "מנהל איזור"]  # נזהה גם 'אזור' וגם 'איזור'
-
+# DEFAULT_COLS = ["מנהל סחר", "מנהל אזור", "מנהל איזור"]  # נזהה גם 'אזור' וגם 'איזור'
+DEFAULT_COLS = ["מנהל סחר", "סוכן"]  # נזהה גם 'אזור' וגם 'איזור'
 def remove_other_rows(df: pd.DataFrame, cols: Iterable[str] = DEFAULT_COLS) -> Tuple[pd.DataFrame, int]:
     present = [c for c in cols if c in df.columns]
     if not present:
